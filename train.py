@@ -42,16 +42,26 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=config["training"]["lr"])
 
     for epoch in range(config["training"]["epochs"]):
-        train_loss = train_one_epoch(model, train_loader, optimizer)
-        val_rmse = evaluate(model, val_loader)
+        train_loss = train_one_epoch(model, train_loader, optimizer)    
+        train_rmse = torch.sqrt(torch.tensor(train_loss))       # train loss is MSE, so take sqrt to get RMSE
+
+        val_rmse, val_mae, val_r2 = evaluate(model, val_loader)
+
+        gap = val_rmse - train_rmse
 
         mlflow.log_metric("train_loss", train_loss, step=epoch)
+        mlflow.log_metric("train_rmse", train_rmse.item(), step=epoch)
+        mlflow.log_metric("val_mae", val_mae.item(), step=epoch)
+        mlflow.log_metric("val_r2", val_r2.item(), step=epoch)
         mlflow.log_metric("val_rmse", val_rmse.item(), step=epoch)
+        mlflow.log_metric("generalisation_gap", gap, step=epoch)
 
         print(f"Epoch {epoch}: Train Loss={train_loss:.4f}, Val RMSE={val_rmse:.4f}")
 
-    test_rmse = evaluate(model, test_loader)
+    test_rmse, test_mae, test_r2 = evaluate(model, test_loader)
     mlflow.log_metric("test_rmse", test_rmse.item())
+    mlflow.log_metric("test_mae", test_mae.item())
+    mlflow.log_metric("test_r2", test_r2.item())
 
     mlflow.pytorch.log_model(model, "model")
 
