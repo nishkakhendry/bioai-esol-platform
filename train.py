@@ -14,7 +14,11 @@ def main():
     config = load_config("configs/config.yaml")
     set_seed(config["seed"])
 
+    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    mlflow.set_experiment("esol_prediction")
     mlflow.start_run()
+
+    mlflow.log_params(config)
 
     dataset, smiles_list = load_esol_dataset(config["data"]["root"])
 

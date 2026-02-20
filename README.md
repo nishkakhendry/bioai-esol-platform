@@ -48,3 +48,13 @@ training:
 - Batch size (32): balances gradient stability and generalisation on small datasets.
 - Learning rate (1e-3): stable Adam default for small GNNs.
 - Epochs (50): enough to observe convergence without excessive overfitting.
+
+## To train the model
+
+Update `configs/config.yaml`
+
+Run:
+
+```
+python train.py
+```
