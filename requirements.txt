@@ -1,7 +1,0 @@
-torch
-torch-geometric
-rdkit
-scikit-learn
-mlflow
-pyyaml
-numpy
