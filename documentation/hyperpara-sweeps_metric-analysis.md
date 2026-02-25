@@ -70,6 +70,92 @@ MLflow UI containing logged metric values and plots used for comparisons, and to
 
 # Promoting the Best Model to Production Stage
 
+MLflow Model Registry provides structured versioning and lifecycle management of trained models, enabling controlled promotion from experimentation to production with full reproducibility. It is relevant because it bridges research and deployment by tracking model versions, metadata, and performance while supporting safe, governed model updates.
+
+## Staging and Aliases in MLflow Model Registry
+
+| Traditional Stage | Old Meaning                   | Modern Alias Equivalent          | User For                                                                                                             |
+| ----------------- | ----------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **None**          | Newly registered, unevaluated | No alias assigned                | Freshly trained models, Models awaiting evaluation, Grid search candidates                                           |
+| **Staging**       | Candidate under validation    | `candidate` or `staging` alias   | Offline evaluation, A/B testing, Shadow deployments, Manual QA review                                                |
+| **Production**    | Live serving model            | `champion` or `production` alias | The model currently powering inference, Stable, validated, reproducible version, Model tied to monitoring and alerts |
+| **Archived**      | Retired version               | No alias (or `archived` tag)     | Old production models, Failed candidates, Historical reproducibility                                                 |
+
+**Why aliases > stages?**
+
+MLflow aliases replace rigid lifecycle stages with flexible named pointers such as `champion`, `candidate`, `baseline` and `shadow`. Multiple aliases can coexist, enabling champion–challenger workflows, shadow deployments, and controlled promotion without hard state transitions.
+
+## Model Promotion Policy
+
+Implemented in `src/bioai_esol/mlops/promote_model.py`.
+Run from `mlops` directory using:
+
+```
+python promote_model.py
+```
+
+Flow of this script:
+Selects a candidate using logic described below -> Extracts hyperparameters from the chosen MLflow run -> Retrains using same training logic and data split with early stopping to optimal step -> Logs the retrained model as a new run -> Registers it as `candidate` -> Promotes it to `champion` if criteria are satisfied
+
+The policy should:
+
+1. Prevent accidental promotion of unstable models, and allow rollbacks
+2. Be metric-driven (not subjective)
+3. Be reproducible
+4. Require minimal manual overhead (e.g., UI clicks)
+5. Work for a single developer
+
+**Registration Rule**
+
+A model is eligible for registry **only if**:
+
+- Training completed without error
+- `best_val_rmse` is logged
+- `test_rmse`, `test_mae`, `test_r2` are logged
+- Generalisation gap is within acceptable bounds
+
+If these conditions are not met → do not register.
+
+**Candidate Assignment Rule**
+
+Among all completed runs in an experiment, find the model satisfying:
+
+- `best_val_rmse` is the lowest observed so far
+- AND `generalisation_gap` < threshold
+- AND `val_r2` within 5% of best observed
+
+This prevents: Selecting unstable minima, Selecting high-variance runs, Selecting marginal improvements
+
+Select the chosen model's hyperparameters as the "best" from the grid search. Retrain the model from scratch with early stopping using the same data split, then register it as a `candidate`. There is only one `candidate` at a time.
+
+**Promotion to Champion Rule**
+
+Promote `candidate` → `champion` only if:
+
+- `test_rmse` improves over current champion by ≥ 1–2%
+- AND no metric regression > tolerance (e.g., MAE worse by >5%)
+- AND generalisation gap remains acceptable
+
+This automatically “demotes” previous champion (since alias moves).
+
+**Reproducibility Rule**
+
+Before champion promotion, verify:
+
+- Seed logged, Hyperparameters logged, Code version (git commit hash) logged, Dataset version fixed
+
+If not → block promotion. This prevents silent irreproducibility.
+
+→ All already being logged in MLflow runs
+
+**Rollback Rule**
+
+If new champion degrades in monitoring:
+
+- Reassign `champion` to previous version, Tag failed version: `status="failed_in_monitoring"`
+
+No deletion -- only alias reassignment.
+
 # Appendix 1
 
 Slightly modified main function in `train.py` for hyperparameter sweep with MLflow logging.

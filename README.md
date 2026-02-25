@@ -97,4 +97,8 @@ python train.py
 
 ## Hyperparameter Sweep with MLflow
 
-Hyperparameter sweep and analysis of models logged using experiment tracking in MLflow covered in: `documentation/hyperpara-sweeps_metric-analysis.md`
+Hyperparameter sweep using MLflow for experiment tracking in MLflow + automatic retraining and model promotion policy in MLflow model registry covered in: `documentation/hyperpara-sweeps_metric-analysis.md`
+
+Outcome of this step = "champion" model ready for production deployment in MLflow model registry
+
+## Model Inference via API + Deployment
