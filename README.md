@@ -14,7 +14,7 @@ Note: This project is documented as an open-source-style guide, walking readers 
 
 Current progress highlighted in _italics_
 
-(Dataset + model) → (Experiment tracking + hyperprameter sweep) → _(Analyse metrics to choose best model)_ → (Model inference API + deployment) → (Monitoring model performance with Evidently AI + Grafana) → (CI and Testing)
+(Dataset + model) → (Experiment tracking + hyperprameter sweep) → (Analyse metrics to choose best model) → _(Model inference API + deployment)_ → (Monitoring model performance with Evidently AI + Grafana) → (CI and Testing)
 
 ## Task
 
